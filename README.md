@@ -161,7 +161,9 @@ Data logging and analytics dashboard
 Offline fallback mode
 
 
-#Contributors
+
+
+Contributors
 
 Ilhaan Ali Dirie
 
