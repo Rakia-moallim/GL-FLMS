@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 const NAV_ITEMS = [
   {
     label: "Dashboard",
-    active: true,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1.5"/>
@@ -17,7 +16,6 @@ const NAV_ITEMS = [
   },
   {
     label: "Sensor Nodes",
-    active: false,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -27,7 +25,6 @@ const NAV_ITEMS = [
   },
   {
     label: "Alert History",
-    active: false,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -37,7 +34,6 @@ const NAV_ITEMS = [
   },
   {
     label: "Analytics",
-    active: false,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -46,7 +42,6 @@ const NAV_ITEMS = [
   },
   {
     label: "Reports",
-    active: false,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -59,7 +54,6 @@ const NAV_ITEMS = [
   },
   {
     label: "Settings",
-    active: false,
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -72,9 +66,11 @@ const NAV_ITEMS = [
 interface SidebarProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  activeItem: string;
+  onActiveItemChange: (item: string) => void;
 }
 
-export default function Sidebar({ searchQuery, onSearchChange }: SidebarProps) {
+export default function Sidebar({ searchQuery, onSearchChange, activeItem, onActiveItemChange }: SidebarProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -118,7 +114,9 @@ export default function Sidebar({ searchQuery, onSearchChange }: SidebarProps) {
         {NAV_ITEMS.map((item) => (
           <div
             key={item.label}
-            className={`sidebar-nav-item${item.active ? " active" : ""}`}
+            className={`sidebar-nav-item${activeItem === item.label ? " active" : ""}`}
+            onClick={() => onActiveItemChange(item.label)}
+            style={{ cursor: "pointer" }}
           >
             {item.icon}
             <span className="sidebar-nav-label">{item.label}</span>

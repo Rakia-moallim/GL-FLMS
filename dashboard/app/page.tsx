@@ -10,11 +10,18 @@ import TemporalAnalysis from "../components/TemporalAnalysis";
 import DetectionGauge from "../components/DetectionGauge";
 import RightPanel from "../components/RightPanel";
 
+import SensorNodes from "../components/modules/SensorNodes";
+import AlertHistory from "../components/modules/AlertHistory";
+import Analytics from "../components/modules/Analytics";
+import Reports from "../components/modules/Reports";
+import Settings from "../components/modules/Settings";
+
 export default function Dashboard() {
   const { data, history, connected, lastUpdate, uptime, sessionStart, signalStrength } = useSensorData();
   const { gas, flame, alarm } = data;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("Dashboard");
 
   // Build sparkline data from history
   const gasSparkData = useMemo(() => history.map((h) => ({ v: h.gas })), [history]);
@@ -36,10 +43,12 @@ export default function Dashboard() {
   return (
     <div className={`app-shell${alarm ? " alarm-active" : ""}`}>
       {/* Sidebar */}
-      <Sidebar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <Sidebar searchQuery={searchQuery} onSearchChange={setSearchQuery} activeItem={activeTab} onActiveItemChange={setActiveTab} />
 
       {/* Main content */}
       <main className="main-content">
+        {activeTab === "Dashboard" ? (
+          <>
         {/* Emergency ticker */}
         <AnimatePresence>
           {alarm && (
@@ -180,6 +189,33 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </div>
+          </>
+        ) : activeTab === "Sensor Nodes" ? (
+          <SensorNodes gas={gas} flame={flame} alarm={alarm} gasSparkData={gasSparkData} fireSparkData={fireSparkData} />
+        ) : activeTab === "Alert History" ? (
+          <AlertHistory alarm={alarm} />
+        ) : activeTab === "Analytics" ? (
+          <Analytics />
+        ) : activeTab === "Reports" ? (
+          <Reports />
+        ) : activeTab === "Settings" ? (
+          <Settings />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card"
+            style={{ padding: "60px 40px", marginTop: 40, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "400px" }}
+          >
+            <div style={{ padding: 24, borderRadius: "50%", background: "rgba(255,255,255,0.05)", marginBottom: 24 }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-secondary)" }}>
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>{activeTab}</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>This module is currently under development.</p>
+          </motion.div>
+        )}
 
         {/* Footer */}
         <motion.footer
