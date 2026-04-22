@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import CountUp from "react-countup";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 
-type CardType = "gas" | "oxygen" | "fire" | "system";
+type CardType = "gas" | "fire" | "system";
 
 interface SensorCardProps {
   type: CardType;
@@ -26,12 +26,6 @@ const ICONS: Record<CardType, React.ReactNode> = {
       <circle cx="12" cy="10" r="3"/>
     </svg>
   ),
-  oxygen: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m10 0h3a2 2 0 0 0 2-2v-3"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  ),
   fire: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 2c0 6-8 8-8 14a8 8 0 0 0 16 0c0-6-8-8-8-14z"/>
@@ -51,7 +45,6 @@ const COLORS: Record<string, string> = {
   safe: "#10B981",
   warning: "#F59E0B",
   danger: "#DC2626",
-  oxygen: "#3B82F6",
 };
 
 function getGasState(v: number): "safe" | "warning" | "danger" {
@@ -73,9 +66,6 @@ export default function SensorCard({
     color = COLORS[state];
     if (state === "danger" || alarm) { cardClass += " state-danger"; dotClass = "danger"; }
     else if (state === "warning") { cardClass += " state-warning"; dotClass = "warning"; }
-  } else if (type === "oxygen") {
-    color = value < 18 ? COLORS.danger : value < 19.5 ? COLORS.warning : COLORS.oxygen;
-    if (alarm) { cardClass += " state-danger"; dotClass = "danger"; }
   } else if (type === "fire") {
     color = value > 0 ? COLORS.danger : COLORS.safe;
     if (value > 0 || alarm) { cardClass += " state-danger"; dotClass = "danger"; }
@@ -104,7 +94,7 @@ export default function SensorCard({
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
           <motion.div
             style={{ color, opacity: 0.9 }}
-            animate={alarm && type !== "oxygen" ? { scale: [1, 1.15, 1] } : {}}
+            animate={alarm ? { scale: [1, 1.15, 1] } : {}}
             transition={{ repeat: Infinity, duration: 1 }}
           >
             {ICONS[type]}
@@ -130,7 +120,7 @@ export default function SensorCard({
             <CountUp
               end={value}
               duration={1.2}
-              decimals={type === "oxygen" ? 1 : 0}
+              decimals={0}
               preserveValue
             />
             <span className="sensor-card-unit">{unit}</span>
@@ -181,7 +171,7 @@ export default function SensorCard({
             <motion.div
               style={{ height: "100%", background: `linear-gradient(90deg, ${COLORS.safe}, ${color})`, borderRadius: 2 }}
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, Math.max(0, type === "oxygen" ? ((value - 15) / 10) * 100 : value))}%` }}
+              animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
               transition={{ duration: 1.2, ease: "easeInOut" }}
             />
           </div>

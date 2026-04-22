@@ -12,21 +12,12 @@ import RightPanel from "../components/RightPanel";
 
 export default function Dashboard() {
   const { data, history, connected, lastUpdate, uptime, sessionStart, signalStrength } = useSensorData();
-  const { gas, flame, alarm, oxygen = 20.9 } = data;
+  const { gas, flame, alarm } = data;
 
   const [searchQuery, setSearchQuery] = useState("");
 
   // Build sparkline data from history
   const gasSparkData = useMemo(() => history.map((h) => ({ v: h.gas })), [history]);
-
-  // Oxygen sparkline: static near 20.9
-  const oxygenSparkData = useMemo(() =>
-    Array.from({ length: Math.max(gasSparkData.length, 8) }, (_, i) => ({
-      v: 20.9 + (Math.random() - 0.5) * 0.1,
-    })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [gasSparkData.length]
-  );
 
   // Fire sparkline (0/1 events)
   const fireSparkData = useMemo(() =>
@@ -93,16 +84,7 @@ export default function Dashboard() {
             sparkData={gasSparkData}
             delay={0}
           />
-          <SensorCard
-            type="oxygen"
-            label="Atmospheric"
-            title="Oxygen Level"
-            value={oxygen}
-            unit="%"
-            alarm={alarm}
-            sparkData={oxygenSparkData}
-            delay={0.08}
-          />
+
           <SensorCard
             type="fire"
             label="Sensor · Node 01"
@@ -114,7 +96,7 @@ export default function Dashboard() {
             isBoolean
             booleanTrue="DETECTED"
             booleanFalse="ALL CLEAR"
-            delay={0.16}
+            delay={0.08}
           />
           <SensorCard
             type="system"
@@ -124,7 +106,7 @@ export default function Dashboard() {
             unit="%"
             alarm={alarm}
             sparkData={systemSparkData}
-            delay={0.24}
+            delay={0.16}
           />
         </div>
 

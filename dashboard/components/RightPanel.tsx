@@ -127,7 +127,7 @@ export default function RightPanel({ connected, signalStrength, uptime, sessionS
             borderBottom: "1px solid var(--border)",
           }}>
             <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{row.label}</span>
-            <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600 }}>{row.value}</span>
+            <span style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 600 }} suppressHydrationWarning>{row.value}</span>
           </div>
         ))}
       </motion.div>
