@@ -61,10 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Query Firestore 'homes' collection using the manual app
-      final DocumentSnapshot homeDoc = await FirebaseFirestore.instanceFor(
-        app: Firebase.app('manual')
-      )
+      // Query Firestore 'homes' collection
+      final DocumentSnapshot homeDoc = await FirebaseFirestore.instance
           .collection('homes')
           .doc(homeId)
           .get();
