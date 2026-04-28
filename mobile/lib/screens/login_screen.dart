@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,8 +61,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Query Firestore 'homes' collection
-      final DocumentSnapshot homeDoc = await FirebaseFirestore.instance
+      // Query Firestore 'homes' collection using the manual app
+      final DocumentSnapshot homeDoc = await FirebaseFirestore.instanceFor(
+        app: Firebase.app('manual')
+      )
           .collection('homes')
           .doc(homeId)
           .get();
@@ -89,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       debugPrint("Login error: $e");
-      _showErrorSnackBar("Error connecting to server. Please try again.");
+      _showErrorSnackBar("Error: ${e.toString()}");
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -127,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           
           SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

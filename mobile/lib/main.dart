@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:percent_indicator/percent_indicator.dart';
@@ -15,16 +16,23 @@ void main() async {
   // This will work across Android and iOS for Realtime Database
   // if you strictly use Realtime Database and no native-specific services.
   try {
+    // Using a named app 'manual' to bypass any cached or conflicting configs
     await Firebase.initializeApp(
+      name: 'manual',
       options: const FirebaseOptions(
         apiKey: 'AIzaSyCOxDVTNHq9rDOC-AbglipGuHrv0aYvnc0',
-        appId: '1:206275229351:android:ac600f712bb96d26c60d82', // Note: User provided web appId, but I'll use the relevant part or keep web if they intended cross-platform web-init
+        appId: '1:206275229351:web:ac600f712bb96d26c60d82',
         messagingSenderId: '206275229351',
         projectId: 'koor-mission-control',
         databaseURL: 'https://koor-mission-control-default-rtdb.firebaseio.com',
         storageBucket: 'koor-mission-control.firebasestorage.app',
       ),
     );
+    debugPrint("Firebase 'manual' app initialized successfully");
+    
+    // Sign in anonymously to the 'manual' app
+    await FirebaseAuth.instanceFor(app: Firebase.app('manual')).signInAnonymously();
+    debugPrint("Anonymous sign-in successful");
   } catch (e) {
     debugPrint("Firebase init error: $e");
   }
@@ -93,9 +101,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     homeId = prefs.getString('homeId') ?? "100045"; // Default placeholder if missing
     
-    _sensorRef = FirebaseDatabase.instance.ref('status/$homeId/sensors');
+    _sensorRef = FirebaseDatabase.instanceFor(
+      app: Firebase.app('manual')
+    ).ref('status/$homeId/sensors');
     
     _sensorRef!.onValue.listen((event) {
+      debugPrint("Data received for $homeId: ${event.snapshot.value}");
       if (event.snapshot.value != null) {
         final data = Map<String, dynamic>.from(event.snapshot.value as Map);
         setState(() {
@@ -104,8 +115,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           alarm = (data['alarm'] ?? false) as bool;
           isConnected = true;
         });
+      } else {
+        debugPrint("Snapshot is NULL for path: status/$homeId/sensors");
       }
     }, onError: (error) {
+      debugPrint("Database Listener Error: $error");
       setState(() => isConnected = false);
     });
   }
