@@ -76,6 +76,7 @@ export default function RegisteredHomes() {
               <thead>
                 <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border)" }}>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Home ID</th>
+                  <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Notification Email</th>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Address</th>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Location (Lat/Lng)</th>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Registration Date</th>
@@ -90,6 +91,9 @@ export default function RegisteredHomes() {
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)" }} />
                         <span style={{ fontSize: 14, color: "var(--text-primary)", fontWeight: 700 }}>{home.home_id}</span>
                       </div>
+                    </td>
+                    <td style={{ padding: "16px 24px" }}>
+                      <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{home.email || "—"}</span>
                     </td>
                     <td style={{ padding: "16px 24px", maxWidth: 300 }}>
                       <span style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

@@ -44,6 +44,7 @@ export default function RegisterHome() {
   const [homeSuffix, setHomeSuffix] = useState("");
   const [deviceMac, setDeviceMac]     = useState("");
   const [password, setPassword]     = useState("");
+  const [email, setEmail]           = useState("");
   const [showPass, setShowPass]     = useState(false);
 
   // Address state
@@ -157,6 +158,10 @@ export default function RegisterHome() {
       setErrorMsg("Please enter a Home Address.");
       return;
     }
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Please enter a valid Notification Email.");
+      return;
+    }
     if (!password.trim()) {
       setErrorMsg("Please set a Mobile Access Password.");
       return;
@@ -172,6 +177,7 @@ export default function RegisterHome() {
       await setDoc(docRef, {
         home_id:           finalId,
         password:          password.trim(),
+        email:             email.trim().toLowerCase(),
         address:           selectedPlace?.display_name ?? addressInput.trim(),
         lat:               selectedPlace?.lat ?? null,
         lng:               selectedPlace?.lng ?? null,
@@ -192,6 +198,7 @@ export default function RegisterHome() {
       setHomeSuffix("");
       setDeviceMac("");
       setPassword("");
+      setEmail("");
       setAddressInput("");
       setSelectedPlace(null);
     } catch (err: unknown) {
@@ -440,6 +447,26 @@ export default function RegisterHome() {
                     </motion.div>
                   )}
                 </div>
+              </div>
+
+              {/* Notification Email */}
+              <div className="rh-field rh-field--full">
+                <label className="rh-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Notification Email
+                </label>
+                <div className="rh-input-group">
+                  <input
+                    type="email"
+                    className="rh-input"
+                    placeholder="e.g. resident@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <p className="rh-hint">Used for sending critical gas and flame alerts.</p>
               </div>
 
               {/* Mobile Access Password */}

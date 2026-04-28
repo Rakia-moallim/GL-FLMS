@@ -17,8 +17,8 @@
 #include "addons/RTDBHelper.h"
 
 // ─── WiFi Credentials ─────────
-#define WIFI_SSID     "Ismail"
-#define WIFI_PASSWORD "12345678."
+#define WIFI_SSID     "Moallim"
+#define WIFI_PASSWORD "password"
 
 // ─── Home Configuration ─────────────
 String homeID = "100045";  // Default fallback ID
@@ -48,13 +48,33 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 #define FLAME_SENSOR 35
 
 // ─── Config ─────
-#define GAS_THRESHOLD   60     // % above which gas alarm triggers
+int gasThreshold      = 60;    // Default % above which gas alarm triggers (synced from DB)
 #define SEND_INTERVAL   5000   // ms between Firebase pushes
+#define SYNC_INTERVAL   30000  // ms between settings sync
 
 // ─── State ───
 bool firebaseReady    = false;
+bool lastAlarmState   = false;
 unsigned long lastSendMs = 0;
+unsigned long lastSyncMs = 0;
 unsigned long lastLcdMs  = 0;
+
+// ─── Dynamic Config ──────────────────
+void syncSettings() {
+  if (!firebaseReady) return;
+  
+  Serial.println("[Config] Syncing settings from RTDB...");
+  if (Firebase.RTDB.getInt(&fbdo, "/settings/global/gasThreshold")) {
+    if (fbdo.dataType() == "int") {
+      gasThreshold = fbdo.intData();
+      Serial.print("[Config] Updated Gas Threshold: ");
+      Serial.println(gasThreshold);
+    }
+  } else {
+    Serial.print("[Config] Sync failed: ");
+    Serial.println(fbdo.errorReason());
+  }
+}
 
 
 void connectWiFi() {
@@ -138,6 +158,38 @@ void syncHomeID() {
   }
 }
 
+// ─── Alert Persistence ────────────────
+void logAlertToFirestore(String type, String desc) {
+  if (!firebaseReady) return;
+
+  Serial.println("[Alert] Recording incident to Database...");
+  
+  // Get current time for the record
+  time_t now = time(nullptr);
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  char timestamp[25];
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+
+  FirebaseJson content;
+  content.set("timestamp", String(timestamp));
+  content.set("type", type);
+  content.set("source", "Node 01");
+  content.set("desc", desc);
+  content.set("status", "Resolved");
+
+  // Generate a unique ID based on timestamp
+  String alertId = "alert_" + String(now);
+  String path = "/alerts/" + alertId;
+
+  if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &content)) {
+    Serial.println("[Alert] ✓ Incident recorded permanently in RTDB");
+  } else {
+    Serial.print("[Alert] ✗ Failed to record: ");
+    Serial.println(fbdo.errorReason());
+  }
+}
+
 // ────────────────────
 void setup() {
   Serial.begin(115200);
@@ -196,7 +248,8 @@ void setup() {
     lcd.setCursor(0, 0); lcd.print("Firebase Init...");
     initFirebase();
     delay(1000);
-    syncHomeID();  // ← Fetch the dynamic Home ID
+    syncHomeID();    // ← Fetch the dynamic Home ID
+    syncSettings();  // ← Fetch thresholds
     delay(1000);
     lcd.clear();
     Serial.println("[Firebase] Init complete");
@@ -219,16 +272,28 @@ void loop() {
   int  flameRaw     = digitalRead(FLAME_SENSOR);
   bool flameDetected = (flameRaw == LOW);  // LOW = flame present
 
-  bool gasHigh = (gasPercent > GAS_THRESHOLD);
+  bool gasHigh = (gasPercent > gasThreshold);
   bool alarm   = gasHigh || flameDetected;
 
-  // ── 2. Serial Debug ──────────────────
-  Serial.printf("[Sensor] Gas: %d%% | Flame: %s | Alarm: %s\n",
-    gasPercent,
-    flameDetected ? "YES" : "NO",
-    alarm         ? "ON"  : "OFF");
+  // ── 2. Detection Tracking (Firestore Persistence) ──
+  if (alarm && !lastAlarmState) {
+    // Alarm just triggered
+    String type = flameDetected ? "Critical" : "Warning";
+    String desc = flameDetected ? "FLAME DETECTED in Kitchen" : "High Gas Level: " + String(gasPercent) + "%";
+    logAlertToFirestore(type, desc);
+  }
+  lastAlarmState = alarm;
 
-  // ── 3. LCD Update ────────────────────────
+  // ── 3. Serial Debug ──────────────────
+  if (now - lastSendMs >= SEND_INTERVAL) {
+     Serial.printf("[Sensor] Gas: %d%% (Thr: %d%%) | Flame: %s | Alarm: %s\n",
+      gasPercent,
+      gasThreshold,
+      flameDetected ? "YES" : "NO",
+      alarm         ? "ON"  : "OFF");
+  }
+
+  // ── 4. LCD Update ────────────────────────
   bool wifiOk = (WiFi.status() == WL_CONNECTED);
 
   lcd.setCursor(0, 0);
@@ -252,7 +317,7 @@ void loop() {
     lcd.print("Status: SAFE    ");
   }
 
-  // ── 4. Local Alerts (Buzzer + LEDs) 
+  // ── 5. Local Alerts (Buzzer + LEDs) 
   if (alarm) {
     digitalWrite(GREEN_LED, LOW);
     digitalWrite(RED_LED,   HIGH);
@@ -263,15 +328,13 @@ void loop() {
     noTone(BUZZER_PIN);
   }
 
-  // ── 5. Firebase Push (non-blocking, every SEND_INTERVAL ms)
+  // ── 6. Firebase Push & Settings Sync
   if (now - lastSendMs >= SEND_INTERVAL) {
     lastSendMs = now;
 
-    // Reconnect WiFi if dropped
     if (!wifiOk) {
       Serial.println("[WiFi] Dropped — reconnecting...");
       WiFi.reconnect();
-      delay(2000);
     }
 
     if (firebaseReady) {
@@ -280,20 +343,18 @@ void loop() {
       json.set("flame", flameDetected);
       json.set("alarm", alarm);
 
-      Serial.println("[Firebase] Sending data...");
       String path = "/status/" + homeID + "/sensors";
-      if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
-        Serial.println("[Firebase] ✓ Data sent successfully");
-      } else {
-        Serial.print("[Firebase] ✗ Error: ");
-        Serial.println(fbdo.errorReason());
-      }
-    } else {
-      Serial.println("[Firebase] Not ready — skipping push");
+      Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json);
     }
   }
 
-  delay(300); // Small yield — sensor polling at ~3Hz
+  // Periodic Settings Sync
+  if (now - lastSyncMs >= SYNC_INTERVAL) {
+    lastSyncMs = now;
+    syncSettings();
+  }
+
+  delay(300); // Small yield
 }
 
 

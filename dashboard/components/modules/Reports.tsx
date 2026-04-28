@@ -1,6 +1,42 @@
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { firestore } from "../../lib/firebase";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+
+interface ReportRecord {
+  id: string;
+  name: string;
+  date: any;
+  type: string;
+  url?: string;
+}
 
 export default function Reports() {
+  const [reports, setReports] = useState<ReportRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(firestore, "reports"), orderBy("date", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ReportRecord[];
+      setReports(docs);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const formatDate = (ts: any) => {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("en-US", { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric'
+    });
+  };
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="module-container" style={{ padding: "0 20px" }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>Reports</h1>
@@ -23,15 +59,28 @@ export default function Reports() {
       <div className="glass-card" style={{ padding: 32 }}>
         <h2 style={{ fontSize: 18, color: "var(--text-primary)", marginBottom: 20 }}>Recent Reports</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {["April 2026 System Summary", "Q1 2026 Incident Report", "March 2026 System Summary"].map((report, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid var(--border)", transition: "0.2s" }} className="hover-border">
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                 <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{report}</span>
-              </div>
-              <span style={{ color: "#3B82F6", cursor: "pointer", fontSize: 14, fontWeight: 500 }}>Download</span>
+          {loading ? (
+            <div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>
+              <span className="rh-spinner" />
             </div>
-          ))}
+          ) : reports.length === 0 ? (
+            <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
+              No reports found in database.
+            </div>
+          ) : (
+            reports.map((report) => (
+              <div key={report.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid var(--border)", transition: "0.2s" }} className="hover-border">
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div>
+                    <span style={{ color: "var(--text-primary)", fontWeight: 500, display: "block" }}>{report.name}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{formatDate(report.date)}</span>
+                  </div>
+                </div>
+                <a href={report.url || "#"} target="_blank" rel="noreferrer" style={{ color: "#3B82F6", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>Download</a>
+              </div>
+            ))
+          )}
         </div>
       </div>
       <style dangerouslySetInnerHTML={{__html: `
