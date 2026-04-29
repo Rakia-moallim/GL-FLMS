@@ -1,7 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,6 +16,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _homeIdController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  bool emailAlerts = true;
+  bool pushAlerts = true;
   bool isLoading = true;
 
   @override
@@ -22,15 +29,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    String homeId = prefs.getString('homeId') ?? "100045";
+    _homeIdController.text = homeId;
+
+    try {
+      // Load email from Firestore
+      final query = await FirebaseFirestore.instance
+          .collection('homes')
+          .where('home_id', isEqualTo: homeId)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final data = query.docs.first.data();
+        setState(() {
+          _emailController.text = data['email'] ?? "";
+          emailAlerts = data['email_alerts'] ?? true;
+          pushAlerts = data['push_alerts'] ?? true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading Firestore settings: $e");
+    }
+
     setState(() {
-      _homeIdController.text = prefs.getString('homeId') ?? "100045";
       isLoading = false;
     });
   }
 
   Future<void> _saveSettings() async {
+    setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('homeId', _homeIdController.text);
+
+    try {
+      // Save to Firestore
+      final query = await FirebaseFirestore.instance
+          .collection('homes')
+          .where('home_id', isEqualTo: _homeIdController.text)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        // Get current FCM token to ensure it's linked
+        String? token = await FirebaseMessaging.instance.getToken();
+
+        await query.docs.first.reference.update({
+          'email': _emailController.text,
+          'email_alerts': emailAlerts,
+          'push_alerts': pushAlerts,
+          'fcmToken': token,
+        });
+      } else {
+        // If home doesn't exist in Firestore yet, create it
+        String? token = await FirebaseMessaging.instance.getToken();
+        await FirebaseFirestore.instance.collection('homes').add({
+          'home_id': _homeIdController.text,
+          'email': _emailController.text,
+          'email_alerts': emailAlerts,
+          'push_alerts': pushAlerts,
+          'fcmToken': token,
+          'registration_date': FieldValue.serverTimestamp(),
+          'status': 'active',
+          'address': 'Pending Setup'
+        });
+        debugPrint("Created new home record for ${_homeIdController.text}");
+      }
+    } catch (e) {
+      debugPrint("Error saving Firestore settings: $e");
+    }
+
+    setState(() => isLoading = false);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -46,6 +113,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('isLoggedIn', false);
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (route) => false);
+    }
+  }
+
+  Future<void> _sendTestNotification() async {
+    setState(() => isLoading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? homeId = prefs.getString('homeId');
+      
+      if (homeId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please save a Home ID first")));
+        return;
+      }
+
+      // Create a test alert in RTDB to trigger the Cloud Function
+      final alertRef = FirebaseDatabase.instance.ref("alerts").push();
+      await alertRef.set({
+        'type': 'Test',
+        'desc': 'System Check: Push notifications are working correctly!',
+        'homeId': homeId,
+        'timestamp': DateTime.now().toIso8601String(),
+        'status': 'Test'
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Test alert triggered! Check your notifications.'), backgroundColor: Colors.blue),
+      );
+    } catch (e) {
+      debugPrint("Test notification failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -97,11 +196,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               keyboardType: TextInputType.number,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'NOTIFICATION EMAIL',
+                              style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _emailController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Enter email for alerts',
+                                hintStyle: const TextStyle(color: Colors.white24),
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                prefixIcon: const Icon(Icons.email_outlined, color: Colors.white54),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: _saveSettings,
+                                onPressed: isLoading ? null : _saveSettings,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFFF4D00),
                                   foregroundColor: Colors.white,
@@ -109,7 +230,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   elevation: 0,
                                 ),
-                                child: const Text('SAVE CHANGES', style: TextStyle(fontWeight: FontWeight.bold)),
+                                child: isLoading 
+                                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Text('SAVE CONFIGURATIONS', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
@@ -122,11 +245,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             _buildSettingItem(
+                              icon: Icons.alternate_email_rounded,
+                              title: 'Email Alerts',
+                              trailing: Switch(
+                                value: emailAlerts,
+                                onChanged: (v) {
+                                  setState(() => emailAlerts = v);
+                                },
+                                activeColor: const Color(0xFFFF4D00),
+                              ),
+                            ),
+                            const Divider(color: Colors.white10, height: 32),
+                            _buildSettingItem(
                               icon: Icons.notifications_active_outlined,
                               title: 'Push Notifications',
                               trailing: Switch(
-                                value: true,
-                                onChanged: (v) {},
+                                value: pushAlerts,
+                                onChanged: (v) {
+                                  setState(() => pushAlerts = v);
+                                },
                                 activeColor: const Color(0xFFFF4D00),
                               ),
                             ),
@@ -143,6 +280,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               trailing: const Text('1.0.0 (Build 1)', style: TextStyle(color: Colors.white24, fontSize: 12)),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildGlassCard(
+                        child: _buildSettingItem(
+                          icon: Icons.send_rounded,
+                          title: 'Test Notification',
+                          trailing: TextButton(
+                            onPressed: isLoading ? null : _sendTestNotification,
+                            child: const Text('SEND TEST', style: TextStyle(color: Color(0xFFFF4D00), fontWeight: FontWeight.bold)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 40),

@@ -176,6 +176,7 @@ void logAlertToFirestore(String type, String desc) {
   content.set("type", type);
   content.set("source", "Node 01");
   content.set("desc", desc);
+  content.set("homeId", homeID);
   content.set("status", "Resolved");
 
   // Generate a unique ID based on timestamp
