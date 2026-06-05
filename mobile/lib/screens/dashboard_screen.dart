@@ -73,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: alarm ? [
-                  BoxShadow(color: const Color(0xFFFF6D00).withOpacity(0.6), blurRadius: 16)
+                  BoxShadow(color: const Color(0xFFFF6D00).withValues(alpha: 0.6), blurRadius: 16)
                 ] : [],
               ),
               child: const Text('🔥', style: TextStyle(fontSize: 20)),
@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: 300, height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFF6D00).withOpacity(0.1),
+                color: const Color(0xFFFF6D00).withValues(alpha: 0.1),
               ),
             ).animate(onPlay: (controller) => controller.repeat())
              .scale(duration: 4.seconds, begin: const Offset(0.9, 0.9), end: const Offset(1.2, 1.2)),
@@ -164,12 +164,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.15),
+        color: Colors.redAccent.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.redAccent.withOpacity(0.2),
+            color: Colors.redAccent.withValues(alpha: 0.2),
             blurRadius: 20,
             spreadRadius: 2,
           )
@@ -197,7 +197,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-     .shimmer(duration: 1.seconds, color: Colors.redAccent.withOpacity(0.4));
+     .shimmer(duration: 1.seconds, color: Colors.redAccent.withValues(alpha: 0.4));
   }
 
   Widget _buildGasCard() {
@@ -208,8 +208,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A24),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: gasColor.withOpacity(0.3)),
-        boxShadow: alarm ? [BoxShadow(color: gasColor.withOpacity(0.15), blurRadius: 24)] : [],
+        border: Border.all(color: gasColor.withValues(alpha: 0.3)),
+        boxShadow: alarm ? [BoxShadow(color: gasColor.withValues(alpha: 0.15), blurRadius: 24)] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: gasColor.withOpacity(0.2),
+                  color: gasColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -268,8 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A24),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: flame ? Colors.redAccent.withOpacity(0.4) : Colors.green.withOpacity(0.2)),
-        boxShadow: flame ? [BoxShadow(color: Colors.redAccent.withOpacity(0.15), blurRadius: 24)] : [],
+        border: Border.all(color: flame ? Colors.redAccent.withValues(alpha: 0.4) : Colors.green.withValues(alpha: 0.2)),
+        boxShadow: flame ? [BoxShadow(color: Colors.redAccent.withValues(alpha: 0.15), blurRadius: 24)] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +284,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     width: 50, height: 50,
                     decoration: BoxDecoration(
-                      color: flame ? Colors.redAccent.withOpacity(0.2) : Colors.green.withOpacity(0.1),
+                      color: flame ? Colors.redAccent.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -349,7 +349,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isOk ? Colors.green.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1),
+            color: isOk ? Colors.green.withValues(alpha: 0.1) : Colors.redAccent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

@@ -21,8 +21,8 @@ class WelcomeScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFFF4D00).withOpacity(0.4),
-                    const Color(0xFF121212).withOpacity(0.0),
+                    const Color(0xFFFF4D00).withValues(alpha: 0.4),
+                    const Color(0xFF121212).withValues(alpha: 0.0),
                   ],
                   radius: 0.8,
                 ),
@@ -50,7 +50,7 @@ class WelcomeScreen extends StatelessWidget {
                           return Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFFF4D00).withOpacity(0.1),
+                              color: const Color(0xFFFF4D00).withValues(alpha: 0.1),
                             ),
                             padding: const EdgeInsets.all(40),
                             child: const Icon(
@@ -107,7 +107,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                         elevation: 0,
-                        shadowColor: const Color(0xFFFF4D00).withOpacity(0.5),
+                        shadowColor: const Color(0xFFFF4D00).withValues(alpha: 0.5),
                       ),
                       child: const Text(
                         "Get Started",

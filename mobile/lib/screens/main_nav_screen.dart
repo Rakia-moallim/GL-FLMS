@@ -30,7 +30,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0D14),
           border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1),
           ),
         ),
         child: SafeArea(
@@ -62,7 +62,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? activeColor.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

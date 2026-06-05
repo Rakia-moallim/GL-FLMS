@@ -187,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 hintText: 'Enter your 6-digit Home ID',
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.05),
+                                fillColor: Colors.white.withValues(alpha: 0.05),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -209,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 hintText: 'Enter email for alerts',
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.05),
+                                fillColor: Colors.white.withValues(alpha: 0.05),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -252,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onChanged: (v) {
                                   setState(() => emailAlerts = v);
                                 },
-                                activeColor: const Color(0xFFFF4D00),
+                                activeThumbColor: const Color(0xFFFF4D00),
                               ),
                             ),
                             const Divider(color: Colors.white10, height: 32),
@@ -264,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onChanged: (v) {
                                   setState(() => pushAlerts = v);
                                 },
-                                activeColor: const Color(0xFFFF4D00),
+                                activeThumbColor: const Color(0xFFFF4D00),
                               ),
                             ),
                             const Divider(color: Colors.white10, height: 32),
@@ -302,7 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+                            side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
                           ),
                         ),
                       ),
@@ -332,7 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A24),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: child,
     );
@@ -344,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: Colors.white70, size: 20),

@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFF4D00).withOpacity(0.15),
+                color: const Color(0xFFFF4D00).withValues(alpha: 0.15),
               ),
             ),
           ),
@@ -160,10 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),
@@ -188,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 hintText: "1000XXX",
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 filled: true,
-                                fillColor: Colors.black.withOpacity(0.3),
+                                fillColor: Colors.black.withValues(alpha: 0.3),
                                 prefixIcon: const Icon(Icons.home_outlined, color: Colors.white54),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -220,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 hintText: "Enter password",
                                 hintStyle: const TextStyle(color: Colors.white24),
                                 filled: true,
-                                fillColor: Colors.black.withOpacity(0.3),
+                                fillColor: Colors.black.withValues(alpha: 0.3),
                                 prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -257,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   elevation: 5,
-                                  shadowColor: const Color(0xFFFF4D00).withOpacity(0.5),
+                                  shadowColor: const Color(0xFFFF4D00).withValues(alpha: 0.5),
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
