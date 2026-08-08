@@ -52,7 +52,7 @@ exports.sendEmailAlert = functions.database.ref("/alerts/{alertId}")
           const mailOptions = {
             from: `"GL-FLMS Security" <${gmailEmail}>`,
             to: userEmail,
-            subject: `⚠️ EMERGENCY: ${alertData.type} Alert Detected!`,
+            subject: `EMERGENCY: ${alertData.type} Alert Detected!`,
             html: `
               <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
                 <h2 style="color: #d9534f;">Critical Alert Detected</h2>
@@ -75,7 +75,7 @@ exports.sendEmailAlert = functions.database.ref("/alerts/{alertId}")
         if (fcmToken && userData.push_alerts !== false) {
           const message = {
             notification: {
-              title: `⚠️ ${alertData.type} Alert!`,
+              title: `${alertData.type} Alert!`,
               body: alertData.desc,
             },
             android: {

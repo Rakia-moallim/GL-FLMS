@@ -32,10 +32,15 @@ export default function Header({ alarm, selectedHomeId, onHomeChange, address }:
   useEffect(() => {
     const unsub = onSnapshot(collection(firestore, "homes"), (snapshot) => {
       const ids = snapshot.docs.map(doc => doc.id);
-      if (ids.length > 0) setHomes(ids);
+      if (ids.length > 0) {
+        setHomes(ids);
+        if (!ids.includes(selectedHomeId)) {
+          onHomeChange(ids[0]);
+        }
+      }
     });
     return () => unsub();
-  }, []);
+  }, [selectedHomeId, onHomeChange]);
 
   return (
     <motion.div

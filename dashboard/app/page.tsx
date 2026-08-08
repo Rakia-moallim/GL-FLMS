@@ -2,8 +2,10 @@
 import React, { useState, useMemo } from "react";
 import { useSensorData } from "../lib/useSensorData";
 import { useHomeDetails } from "../lib/useHomeDetails";
+import { useAuth } from "../lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 
+import ProtectedRoute from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import SensorCard from "../components/SensorCard";
@@ -18,8 +20,10 @@ import Reports from "../components/modules/Reports";
 import Settings from "../components/modules/Settings";
 import RegisterHome from "../components/modules/RegisterHome";
 import RegisteredHomes from "../components/modules/RegisteredHomes";
+import StaffManagement from "../components/modules/StaffManagement";
 
-export default function Dashboard() {
+function DashboardContent() {
+  const { userRole } = useAuth();
   const [selectedHomeId, setSelectedHomeId] = useState("100045");
   const { data, history, connected, lastUpdate, uptime, sessionStart, signalStrength } = useSensorData(selectedHomeId);
   const { details, loading: detailsLoading } = useHomeDetails(selectedHomeId);
@@ -30,7 +34,6 @@ export default function Dashboard() {
 
   // Build sparkline data from history
   const gasSparkData = useMemo(() => history.map((h) => ({ v: h.gas })), [history]);
-
 
   // Fire sparkline (0/1 events)
   const fireSparkData = useMemo(() =>
@@ -46,175 +49,184 @@ export default function Dashboard() {
     [history.length, systemHealth]
   );
 
+  // Guard admin-only tabs
+  const isAdmin = userRole === "admin";
+
   return (
     <div className={`app-shell${alarm ? " alarm-active" : ""}`}>
       {/* Sidebar */}
-      <Sidebar searchQuery={searchQuery} onSearchChange={setSearchQuery} activeItem={activeTab} onActiveItemChange={setActiveTab} />
+      <Sidebar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeItem={activeTab}
+        onActiveItemChange={setActiveTab}
+      />
 
       {/* Main content */}
       <main className="main-content">
         {activeTab === "Dashboard" ? (
           <>
-        {/* Emergency ticker */}
-        <AnimatePresence>
-          {alarm && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                overflow: "hidden",
-                borderRadius: 12,
-                marginBottom: 16,
-                background: "rgba(220,38,38,0.08)",
-                border: "1px solid rgba(220,38,38,0.25)",
-              }}
-            >
-              <div style={{ padding: "10px 0", overflow: "hidden" }}>
-                <div className="ticker-track">
-                  {Array(8).fill("🚨  EMERGENCY — HAZARD DETECTED — EVACUATE IMMEDIATELY  ·  ").map((t, i) => (
-                    <span key={i} style={{ color: "#DC2626", fontWeight: 700, fontSize: 12, letterSpacing: "0.06em", whiteSpace: "nowrap", paddingRight: 40 }}>
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Hero header */}
-        <Header 
-          alarm={alarm} 
-          selectedHomeId={selectedHomeId} 
-          onHomeChange={setSelectedHomeId} 
-          address={details?.address || (detailsLoading ? "Locating..." : "Address unknown")}
-        />
-
-        {/* ── 4 Sensor Cards ── */}
-        <div className="sensor-grid">
-          <SensorCard
-            type="gas"
-            label="Sensor · Node 01"
-            title="Gas Level"
-            value={gas}
-            unit="%"
-            alarm={alarm}
-            sparkData={gasSparkData}
-            delay={0}
-          />
-
-          <SensorCard
-            type="fire"
-            label="Sensor · Node 01"
-            title="Flame Detection"
-            value={flame ? 1 : 0}
-            unit=""
-            alarm={alarm}
-            sparkData={fireSparkData}
-            isBoolean
-            booleanTrue="DETECTED"
-            booleanFalse="ALL CLEAR"
-            delay={0.08}
-          />
-          <SensorCard
-            type="system"
-            label="System"
-            title="Overall Status"
-            value={systemHealth}
-            unit="%"
-            alarm={alarm}
-            sparkData={systemSparkData}
-            delay={0.16}
-          />
-        </div>
-
-        {/* ── Temporal Analysis + Right Panel ── */}
-        <div className="main-grid">
-          <TemporalAnalysis history={history} alarm={alarm} />
-          <RightPanel
-            connected={connected}
-            signalStrength={signalStrength}
-            uptime={uptime}
-            sessionStart={sessionStart}
-            alarm={alarm}
-            gas={gas}
-            flame={flame}
-          />
-        </div>
-
-        {/* ── Detection Gauge ── */}
-        <div className="bottom-grid" style={{ marginTop: 16 }}>
-          <DetectionGauge value={gas} alarm={alarm} />
-
-          {/* System Status summary card */}
-          <motion.div
-            className="glass-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.4 }}
-            style={{ padding: "24px" }}
-          >
-            <span className="section-label">System Status</span>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 3, marginBottom: 16 }}>
-              Diagnostics
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { label: "Firebase Connection", value: connected ? "Connected" : "Offline",  ok: connected },
-                { label: "ESP32 Device",        value: connected ? "Online" : "Disconnected", ok: connected },
-                { label: "Gas Sensor",          value: `${gas}% reading`,                    ok: gas <= 60 },
-                { label: "Flame Sensor",        value: flame ? "FLAME DETECTED" : "Clear",   ok: !flame },
-                { label: "Alarm System",        value: alarm ? "TRIGGERED" : "Standby",      ok: !alarm },
-                { label: "Last Update",         value: lastUpdate ? lastUpdate.toLocaleTimeString() : "—", ok: true },
-              ].map((row, i) => (
+            {/* Emergency ticker */}
+            <AnimatePresence>
+              {alarm && (
                 <motion.div
-                  key={row.label}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * i + 0.4 }}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    background: "var(--bg-row)",
-                    border: "1px solid var(--border)",
+                    overflow: "hidden",
+                    borderRadius: 12,
+                    marginBottom: 16,
+                    background: "rgba(220,38,38,0.08)",
+                    border: "1px solid rgba(220,38,38,0.25)",
                   }}
                 >
-                  <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{row.label}</span>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: row.ok ? "#10B981" : "#DC2626",
-                    padding: "2px 10px",
-                    borderRadius: 999,
-                    background: row.ok ? "rgba(16,185,129,0.1)" : "rgba(220,38,38,0.1)",
-                  }}>
-                    {row.value}
-                  </span>
+                  <div style={{ padding: "10px 0", overflow: "hidden" }}>
+                    <div className="ticker-track">
+                      {Array(8).fill("🚨  EMERGENCY — HAZARD DETECTED — EVACUATE IMMEDIATELY  ·  ").map((t, i) => (
+                        <span key={i} style={{ color: "#DC2626", fontWeight: 700, fontSize: 12, letterSpacing: "0.06em", whiteSpace: "nowrap", paddingRight: 40 }}>
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </motion.div>
-              ))}
+              )}
+            </AnimatePresence>
+
+            {/* Hero header */}
+            <Header
+              alarm={alarm}
+              selectedHomeId={selectedHomeId}
+              onHomeChange={setSelectedHomeId}
+              address={details?.address || (detailsLoading ? "Locating..." : "Address unknown")}
+            />
+
+            {/* ── 4 Sensor Cards ── */}
+            <div className="sensor-grid">
+              <SensorCard
+                type="gas"
+                label="Sensor · Node 01"
+                title="Gas Level"
+                value={gas}
+                unit="%"
+                alarm={alarm}
+                sparkData={gasSparkData}
+                delay={0}
+              />
+              <SensorCard
+                type="fire"
+                label="Sensor · Node 01"
+                title="Flame Detection"
+                value={flame ? 1 : 0}
+                unit=""
+                alarm={alarm}
+                sparkData={fireSparkData}
+                isBoolean
+                booleanTrue="DETECTED"
+                booleanFalse="ALL CLEAR"
+                delay={0.08}
+              />
+              <SensorCard
+                type="system"
+                label="System"
+                title="Overall Status"
+                value={systemHealth}
+                unit="%"
+                alarm={alarm}
+                sparkData={systemSparkData}
+                delay={0.16}
+              />
             </div>
-          </motion.div>
-        </div>
+
+            {/* ── Temporal Analysis + Right Panel ── */}
+            <div className="main-grid">
+              <TemporalAnalysis history={history} alarm={alarm} />
+              <RightPanel
+                connected={connected}
+                signalStrength={signalStrength}
+                uptime={uptime}
+                sessionStart={sessionStart}
+                alarm={alarm}
+                gas={gas}
+                flame={flame}
+              />
+            </div>
+
+            {/* ── Detection Gauge ── */}
+            <div className="bottom-grid" style={{ marginTop: 16 }}>
+              <DetectionGauge value={gas} alarm={alarm} />
+
+              {/* System Status summary card */}
+              <motion.div
+                className="glass-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.4 }}
+                style={{ padding: "24px" }}
+              >
+                <span className="section-label">System Status</span>
+                <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginTop: 3, marginBottom: 16 }}>
+                  Diagnostics
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { label: "Firebase Connection", value: connected ? "Connected" : "Offline",  ok: connected },
+                    { label: "ESP32 Device",        value: connected ? "Online" : "Disconnected", ok: connected },
+                    { label: "Gas Sensor",          value: `${gas}% reading`,                    ok: gas <= 60 },
+                    { label: "Flame Sensor",        value: flame ? "FLAME DETECTED" : "Clear",   ok: !flame },
+                    { label: "Alarm System",        value: alarm ? "TRIGGERED" : "Standby",      ok: !alarm },
+                    { label: "Last Update",         value: lastUpdate ? lastUpdate.toLocaleTimeString() : "—", ok: true },
+                  ].map((row, i) => (
+                    <motion.div
+                      key={row.label}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * i + 0.4 }}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        background: "var(--bg-row)",
+                        border: "1px solid var(--border)",
+                      }}
+                    >
+                      <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{row.label}</span>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: row.ok ? "#10B981" : "#DC2626",
+                        padding: "2px 10px",
+                        borderRadius: 999,
+                        background: row.ok ? "rgba(16,185,129,0.1)" : "rgba(220,38,38,0.1)",
+                      }}>
+                        {row.value}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
           </>
-        ) : activeTab === "Sensor Nodes" ? (
+        ) : activeTab === "Live Monitoring" ? (
           <SensorNodes gas={gas} flame={flame} alarm={alarm} gasSparkData={gasSparkData} fireSparkData={fireSparkData} />
         ) : activeTab === "Alert History" ? (
           <AlertHistory alarm={alarm} />
         ) : activeTab === "Analytics" ? (
           <Analytics />
-        ) : activeTab === "Reports" ? (
+        ) : activeTab === "Reports" && isAdmin ? (
           <Reports />
-        ) : activeTab === "Settings" ? (
+        ) : activeTab === "Settings" && isAdmin ? (
           <Settings />
         ) : activeTab === "Register Home" ? (
           <RegisterHome />
         ) : activeTab === "Registered Homes" ? (
           <RegisteredHomes />
+        ) : activeTab === "Staff Management" && isAdmin ? (
+          <StaffManagement />
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -222,13 +234,13 @@ export default function Dashboard() {
             className="glass-card"
             style={{ padding: "60px 40px", marginTop: 40, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "400px" }}
           >
-            <div style={{ padding: 24, borderRadius: "50%", background: "rgba(255,255,255,0.05)", marginBottom: 24 }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-secondary)" }}>
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            <div style={{ padding: 24, borderRadius: "50%", background: "rgba(220,38,38,0.08)", marginBottom: 24 }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round">
+                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
               </svg>
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>{activeTab}</h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>This module is currently under development.</p>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>Access Restricted</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>You don&apos;t have permission to access this section.</p>
           </motion.div>
         )}
 
@@ -255,5 +267,13 @@ export default function Dashboard() {
         </motion.footer>
       </main>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

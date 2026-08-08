@@ -2,7 +2,7 @@
 
 /*
   KOOR — Gas Leakage & Flame Detection System
-  ESP32 Firmware v2.0
+  ESP32 Firmware
   Extended: WiFi + Firebase Realtime Database
 */
 
@@ -140,8 +140,10 @@ void syncHomeID() {
   Serial.print("[Config] Fetching Home ID for: ");
   Serial.println(cleanMAC);
   
-  lcd.setCursor(0, 0); lcd.print("Syncing ID...   ");
-  lcd.setCursor(0, 1); lcd.print(deviceMAC);
+  if (!silent) {
+    lcd.setCursor(0, 0); lcd.print("Syncing ID...   ");
+    lcd.setCursor(0, 1); lcd.print(deviceMAC);
+  }
 
   String path = "/devices/" + cleanMAC + "/home_id";
   if (Firebase.RTDB.getString(&fbdo, path.c_str())) {
@@ -184,9 +186,9 @@ void logAlertToFirestore(String type, String desc) {
   String path = "/alerts/" + alertId;
 
   if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &content)) {
-    Serial.println("[Alert] ✓ Incident recorded permanently in RTDB");
+    Serial.println("[Alert] Incident recorded permanently in RTDB");
   } else {
-    Serial.print("[Alert] ✗ Failed to record: ");
+    Serial.print("[Alert] Failed to record: ");
     Serial.println(fbdo.errorReason());
   }
 }
@@ -218,7 +220,7 @@ void setup() {
   Serial.print("CLEAN ID:  "); Serial.println(cleanMAC);
   Serial.println("==============================\n");
 
-  delay(3000); // Pause so you can read the ID
+  delay(6000); // Pause so you can read the ID
 
   // ─── 3. SENSORS & BUZZER ───
   // Pin modes
@@ -249,7 +251,7 @@ void setup() {
     lcd.setCursor(0, 0); lcd.print("Firebase Init...");
     initFirebase();
     delay(1000);
-    syncHomeID();    // ← Fetch the dynamic Home ID
+    syncHomeID(false);    // ← Fetch the dynamic Home ID
     syncSettings();  // ← Fetch thresholds
     delay(1000);
     lcd.clear();
@@ -352,14 +354,9 @@ void loop() {
   // Periodic Settings Sync
   if (now - lastSyncMs >= SYNC_INTERVAL) {
     lastSyncMs = now;
+    syncHomeID(true); // Automatically pick up reassignment without reboot
     syncSettings();
   }
 
   delay(300); // Small yield
 }
-
-
-
-
-
-

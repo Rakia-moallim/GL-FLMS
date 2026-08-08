@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { firestore } from "../../lib/firebase";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 interface HomeRecord {
   id: string;
@@ -11,7 +11,9 @@ interface HomeRecord {
   status: string;
   lat: number | null;
   lng: number | null;
-  registration_date: any;
+  registration_date: unknown;
+  email?: string;
+  contact_email?: string;
 }
 
 export default function RegisteredHomes() {
@@ -42,6 +44,27 @@ export default function RegisteredHomes() {
       minute: '2-digit'
     });
   };
+
+  const handleToggleStatus = async (home: HomeRecord) => {
+    const currentStatus = (home.status || "active").toLowerCase();
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    try {
+      await updateDoc(doc(firestore, "homes", home.id), { status: newStatus });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this registered home? This action cannot be undone.")) {
+      try {
+        await deleteDoc(doc(firestore, "homes", id));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="module-container" style={{ padding: "0 20px" }}>
@@ -81,6 +104,7 @@ export default function RegisteredHomes() {
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Location (Lat/Lng)</th>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Registration Date</th>
                   <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Status</th>
+                  <th style={{ padding: "16px 24px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,10 +135,30 @@ export default function RegisteredHomes() {
                     <td style={{ padding: "16px 24px" }}>
                       <span style={{ 
                         fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 999,
-                        background: "rgba(16,185,129,0.1)", color: "#10B981"
+                        background: (home.status || "active").toLowerCase() === "active" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", 
+                        color: (home.status || "active").toLowerCase() === "active" ? "#10B981" : "#F59E0B"
                       }}>
                         {home.status?.toUpperCase() ?? "ACTIVE"}
                       </span>
+                    </td>
+                    <td style={{ padding: "16px 24px" }}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button 
+                          onClick={() => handleToggleStatus(home)} 
+                          style={{ padding: "6px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          {(home.status || "active").toLowerCase() === "active" ? "Deactivate" : "Activate"}
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(home.id)} 
+                          title="Delete Home"
+                          style={{ padding: "6px 10px", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 8, color: "#DC2626", cursor: "pointer", display: "flex", alignItems: "center" }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

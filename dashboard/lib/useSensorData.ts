@@ -28,6 +28,13 @@ export function useSensorData(homeId: string = "100045") {
   const uptimeRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Reset state when switching homes so we don't show stale data
+    setData({ gas: 0, flame: false, alarm: false, oxygen: 20.9 });
+    setHistory([]);
+    setConnected(false);
+    setLastUpdate(null);
+    setUptime(0);
+
     const sensorRef = ref(db, `status/${homeId}/sensors`);
 
     const unsub = onValue(
@@ -46,6 +53,10 @@ export function useSensorData(homeId: string = "100045") {
             const next = [...prev, { time: timeStr, gas: val.gas }];
             return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
           });
+        } else {
+          // Device has no data in RTDB (offline / never connected)
+          setConnected(false);
+          setData({ gas: 0, flame: false, alarm: false, oxygen: 20.9 });
         }
       },
       () => setConnected(false)

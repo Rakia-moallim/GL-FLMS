@@ -1,7 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class ProfileScreen extends StatelessWidget {

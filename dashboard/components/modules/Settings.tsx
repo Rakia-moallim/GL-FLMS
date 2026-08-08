@@ -33,6 +33,8 @@ export default function Settings() {
     loadSettings();
   }, []);
 
+  const docRef = doc(firestore, "settings", "global");
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -55,7 +57,6 @@ export default function Settings() {
     }
   };
 
-  const docRef = doc(firestore, "settings", "global");
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="module-container" style={{ padding: "0 20px" }}>

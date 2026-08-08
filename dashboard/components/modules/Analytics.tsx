@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import { firestore, db } from "../../lib/firebase";
 import { collection, getDocs, query } from "firebase/firestore";
 import { ref, get } from "firebase/database";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Analytics() {
   const [stats, setStats] = useState({ gasIncidents: 0, flameIncidents: 0, total: 0 });
+  const [chartData, setChartData] = useState<{date: string, gas: number, flame: number}[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +32,29 @@ export default function Analytics() {
           flameIncidents: flame, 
           total: docs.length 
         });
+
+        // Compute chart data
+        const sortedDocs = docs
+          .filter(d => d.timestamp)
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        const cDataMap = new Map<string, { date: string; gas: number; flame: number }>();
+        sortedDocs.forEach(d => {
+          const dateStr = new Date(d.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          if (!cDataMap.has(dateStr)) {
+            cDataMap.set(dateStr, { date: dateStr, gas: 0, flame: 0 });
+          }
+          const entry = cDataMap.get(dateStr)!;
+          if (d.desc?.toLowerCase().includes("gas")) entry.gas++;
+          else if (d.desc?.toLowerCase().includes("flame")) entry.flame++;
+        });
+
+        if (cDataMap.size === 0) {
+           const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" });
+           cDataMap.set(today, { date: today, gas: 0, flame: 0 });
+        }
+
+        setChartData(Array.from(cDataMap.values()).slice(-14));
       } catch (err) {
         console.error("Failed to fetch analytics", err);
       } finally {
@@ -62,16 +87,37 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="glass-card" style={{ padding: 24, height: 340, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-        {/* Mock background grid lines to make it look like a chart background */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "100% 40px", pointerEvents: "none" }} />
-        
-        <div style={{ textAlign: "center", color: "var(--text-muted)", position: "relative", zIndex: 10 }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" style={{ marginBottom: 16, opacity: 0.5 }}>
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          <p style={{ fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>Area Chart Visualization (Placeholder)</p>
-          <p style={{ fontSize: 13, opacity: 0.7 }}>A premium charting library (like Recharts) can be added here.</p>
+      <div className="glass-card" style={{ padding: 24, height: 380, position: "relative" }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 24 }}>Incidents Over Time</h3>
+        <div style={{ width: "100%", height: 300 }}>
+          {loading ? (
+            <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span className="rh-spinner" /></div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorGas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorFlame" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} dx={-10} allowDecimals={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: "rgba(17,24,39,0.9)", backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.1)", borderRadius: 8, color: "#fff" }}
+                  itemStyle={{ color: "#fff" }}
+                  cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                />
+                <Area type="monotone" dataKey="gas" name="Gas Alerts" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorGas)" />
+                <Area type="monotone" dataKey="flame" name="Flame Alerts" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorFlame)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </motion.div>
